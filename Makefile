@@ -184,23 +184,23 @@ dev-docker:
 # ==============================================================================
 # Building containers
 
-all: service metrics
+all: service
 
 service:
 	docker build \
-		-f zarf/docker/dockerfile.service \
+		-f zarf/docker/Dockerfile.service \
 		-t $(SERVICE_IMAGE) \
 		--build-arg BUILD_REF=$(VERSION) \
 		--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 		.
 
-metrics:
-	docker build \
-		-f zarf/docker/dockerfile.metrics \
-		-t $(METRICS_IMAGE) \
-		--build-arg BUILD_REF=$(VERSION) \
-		--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
-		.
+# metrics:
+# 	docker build \
+# 		-f zarf/docker/dockerfile.metrics \
+# 		-t $(METRICS_IMAGE) \
+# 		--build-arg BUILD_REF=$(VERSION) \
+# 		--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
+# 		.
 
 # ==============================================================================
 # Running from within k8s/kind
@@ -233,7 +233,7 @@ dev-status:
 
 dev-load:
 	kind load docker-image $(SERVICE_IMAGE) --name $(KIND_CLUSTER)
-	kind load docker-image $(METRICS_IMAGE) --name $(KIND_CLUSTER)
+	# kind load docker-image $(METRICS_IMAGE) --name $(KIND_CLUSTER)
 
 # podman is currently experimental, and fails for some reason with kind load
 # docker-image (possibly a tagging issue?) but the below works.
@@ -247,16 +247,16 @@ dev-load-podman:
 	kind load image-archive image-sales-metrics --name ardan-starter-cluster
 
 dev-apply:
-	kustomize build zarf/k8s/dev/grafana | kubectl apply -f -
-	kustomize build zarf/k8s/dev/prometheus | kubectl apply -f -
-	kustomize build zarf/k8s/dev/tempo | kubectl apply -f -
-	kustomize build zarf/k8s/dev/loki | kubectl apply -f -
-	kustomize build zarf/k8s/dev/promtail | kubectl apply -f -
-
-	kustomize build zarf/k8s/dev/vault | kubectl apply -f -
-
-	kustomize build zarf/k8s/dev/database | kubectl apply -f -
-	kubectl rollout status --namespace=$(NAMESPACE) --watch --timeout=120s sts/database
+	# kustomize build zarf/k8s/dev/grafana | kubectl apply -f -
+	# kustomize build zarf/k8s/dev/prometheus | kubectl apply -f -
+	# kustomize build zarf/k8s/dev/tempo | kubectl apply -f -
+	# kustomize build zarf/k8s/dev/loki | kubectl apply -f -
+	# kustomize build zarf/k8s/dev/promtail | kubectl apply -f -
+	#
+	# kustomize build zarf/k8s/dev/vault | kubectl apply -f -
+	#
+	# kustomize build zarf/k8s/dev/database | kubectl apply -f -
+	# kubectl rollout status --namespace=$(NAMESPACE) --watch --timeout=120s sts/database
 
 	kustomize build zarf/k8s/dev/sales | kubectl apply -f -
 	kubectl wait pods --namespace=$(NAMESPACE) --selector app=$(APP) --timeout=120s --for=condition=Ready
