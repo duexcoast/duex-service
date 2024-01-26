@@ -18,6 +18,21 @@ config, and then wait until the cluster has applied the changes.
 
 To shutdown the project: `make dev-down`
 
+## Foundation
+
+### web
+
+We are using `package httptreemux` as our router, and in package web we create a
+small web framework that extends the default funcitonality.     
+
+The key entity is the `App` struct which is the entry point into our
+application. We override the default `Handler` function, creating a new
+signature which accepts `context.Context` as its first parameter. This allows us
+to write our routes in such a way that we can pass in the context object. 
+
+We also override the `Handle` function of the mux, allowing us to inject
+middleware before and after the call to the provided `Handler` function.
+
 ## zarf 
 
 ### k8s 
