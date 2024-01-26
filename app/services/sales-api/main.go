@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/ardanlabs/conf/v3"
+	"github.com/duexcoast/duex-service/app/services/sales-api/handlers"
 	"github.com/duexcoast/duex-service/business/web/v1/debug"
 	"github.com/duexcoast/duex-service/foundation/logger"
 	"go.uber.org/zap"
@@ -95,24 +96,30 @@ func run(log *zap.SugaredLogger) error {
 
 	// -------------------------------------------------------------------------
 	// Start Debug Service
+	log.Infow("startup", "status", "debug v1 router started", "host", cfg.Web.DebugHost)
 
 	go func() {
-		log.Info("startup", "status", "debug v1 router started", "host", cfg.Web.DebugHost)
-
 		if err := http.ListenAndServe(cfg.Web.DebugHost, debug.Mux()); err != nil {
-			log.Error("shutdown", "status", "debug v1 router closed", "host", cfg.Web.DebugHost, "msg", err)
+			log.Errorw("shutdown", "status", "debug v1 router closed", "host", cfg.Web.DebugHost, "ERROR", err)
 		}
 	}()
 
 	// -------------------------------------------------------------------------
 	// Start API Service
 
+	log.Infow("startup", "status", "initializing V1 API support")
+
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
+	apiMux := handlers.APIMux(handlers.APIMuxConfig{
+		Shutdown: shutdown,
+		Log:      log,
+	})
+
 	api := http.Server{
 		Addr:         cfg.Web.APIHost,
-		Handler:      nil,
+		Handler:      apiMux,
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 		IdleTimeout:  cfg.Web.IdleTimeout,

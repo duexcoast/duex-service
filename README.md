@@ -14,7 +14,7 @@ cluster
 the docker image into the k8s cluster, use kustomize to load our base k8s
 config, and then wait until the cluster has applied the changes. 
 
-Applying code changes to the kubernetes cluster: `make dev-update`
+- `make dev-update`. If all we did is change some code, this is all we need
 
 To shutdown the project: `make dev-down`
 
