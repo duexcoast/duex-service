@@ -2,8 +2,9 @@ package testgrp
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
+
+	"github.com/duexcoast/duex-service/foundation/web"
 )
 
 // Test is our example route
@@ -20,6 +21,6 @@ func Test(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 		Status: "OK",
 	}
 
-	json.NewEncoder(w).Encode(status)
+	web.Respond(ctx, w, status, http.StatusOK)
 	return nil
 }
