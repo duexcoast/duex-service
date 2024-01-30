@@ -60,14 +60,37 @@ func Logger(log *zap.SugaredLogger) web.Middleware {
 
 ```
 
+
+###### Logging Middleware
+
+Simple enough. We log both before and after the call to `handler()`, when the
+request begins and when the request completes.
+
+Some values are taken from the `request` object, while others are stored in the
+context at the foundation layer, such as the `traceID`.
+
+
 ###### Errors Middleware
 
 This middleware accepts a logger as a parameter, because part of handling an
 error is to log it. 
 
 - The first course of action is to log the error.
-- Send a response back to the caller. We need to figure out what the response
-will look like and what the Status Code of the response will be.
+- We use a switch-case block to determine if the error is trusted or untrusted.
+We use this determination to fill up the `ErrorResponse` struct appropriately.
+- We respond with the appropriate error message and status code.
+- Finally, we check if the error was a shutdown error, allowing the app to
+gracefully shutdown after having logged the error and responded to the request.
+
+###### Panics Middleware 
+
+This middleware calls `recover()` (within a deffered function, otherwise the
+call will do nothing). If there is a `panic!` then we want to log it.
+
+We want to return an error here, so we need to utilize *named return values*,
+allowing us to update the value of the `err` variable from within the defer.
+This error is then handled by the errors middleware, which will respond with a
+`500 Internal Server Error`.
 
 
 ## Foundation
