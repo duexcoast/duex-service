@@ -23,10 +23,7 @@ deleting the cluster, and the telepresence daemon.
 
 ### web
 
-#### v1
-
-
-##### mid
+### web/v1/mid
 
 We have our middleware functions contained here functions contained here. These
 functions can take in arguments, and they return type `web.Middleware`, for
@@ -61,7 +58,7 @@ func Logger(log *zap.SugaredLogger) web.Middleware {
 ```
 
 
-###### Logging Middleware
+#### Logging Middleware
 
 Simple enough. We log both before and after the call to `handler()`, when the
 request begins and when the request completes.
@@ -70,7 +67,7 @@ Some values are taken from the `request` object, while others are stored in the
 context at the foundation layer, such as the `traceID`.
 
 
-###### Errors Middleware
+#### Errors Middleware
 
 This middleware accepts a logger as a parameter, because part of handling an
 error is to log it. 
@@ -82,7 +79,7 @@ We use this determination to fill up the `ErrorResponse` struct appropriately.
 - Finally, we check if the error was a shutdown error, allowing the app to
 gracefully shutdown after having logged the error and responded to the request.
 
-###### Panics Middleware 
+#### Panics Middleware 
 
 This middleware calls `recover()` (within a deffered function, otherwise the
 call will do nothing). If there is a `panic!` then we want to log it.
