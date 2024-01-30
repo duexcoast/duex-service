@@ -25,6 +25,7 @@ deleting the cluster, and the telepresence daemon.
 
 #### v1
 
+
 ##### mid
 
 We have our middleware functions contained here functions contained here. These
@@ -59,8 +60,28 @@ func Logger(log *zap.SugaredLogger) web.Middleware {
 
 ```
 
+###### Errors Middleware
+
+This middleware accepts a logger as a parameter, because part of handling an
+error is to log it. 
+
+- The first course of action is to log the error.
+- Send a response back to the caller. We need to figure out what the response
+will look like and what the Status Code of the response will be.
+
 
 ## Foundation
+
+The foundation layer is meant to be usable across many applications, and other
+developers. Each package in this layer should be as unopinionated as possible.
+To make sure we maintain this high-degree of reusability, we have strong
+policies in place for these packages:
+
+- *No logging*. Logging should be determined by the user of these packages, we
+don't want these packages to prescribe a specific logging package or
+implementation pattern.
+
+- 
 
 ### web
 
@@ -69,14 +90,50 @@ small web framework that extends the default funcitonality.
 
 The key entity is the `App` struct which is the entry point into our
 application. We override the default `Handler` function, creating a new
-signature which accepts `context.Context` as its first parameter. This allows us
-to write our routes in such a way that we can pass in the context object. 
+signature which accepts the `context` as its first parameter. This allows us to
+write our routes in such a way that we can pass in the context object.
 
 We also override the `Handle` function of the mux, allowing us to inject
 middleware before and after the call to the provided `Handler` function. We
 differentiate between two layers of middleware:
 
+- Application-layer middleware that is applied to all routes. This middleware is
+passed to the `NewApp()` function. 
 
+- Local middleware that is applied selectively. We supply this middleware in the
+`Handle()` function.
+
+#### Middleware Handled in Foundation Layer
+
+While the majority of our middleware is implemented in the business-layer, we
+are choosing to implement some middleware-like functionality in the foundation
+layer, as part of our web framework. 
+
+The business layer middleware is implemented in a mostly-typical, if not
+somewhat unique pattern:
+
+- Write a middleware function that can accept any type of argument, and which
+returns a type of `web.Middleware`: This is the more familiar pattern: a
+function that takes in a `Handler` and returns a `Handler`.
+
+- The `wrapMiddleware()` function in our framework will apply all middlewares,
+ultimately returning a single wrapped `Handler` super-charged with all of the
+provided functionality.
+
+Meanwhile, the functionality that we are implementing in the foundation layer
+uses the `context` instead. In our `Handle()` function, we create a struct
+containing a trace ID, the current time and store it in the `context`. We can
+then make use of these in other middleware, by retrieving them from the request
+context (e.g., as in the logger middleware).
+
+#### Functions for Responses and Requests
+
+`web.Respond`
+
+ 
+
+
+#### Middleware Concerns
 - *Local Layer Middleware*. This is for middleware that does not need to be
 applied to all routes. For example, not all routes will require authentication.
 This middleware is applied when we register a route via the `Handle` function.
@@ -88,6 +145,22 @@ If we think of each route servicing incoming requests as an onion with the
 `Handler` itself at the center, then we should think of the local layer
 middleware as closest to the center, as it is applied first, with the
 application layer middleware on the outside, as it is applied last.
+
+#### context
+
+Our `httptreemux` router will create a context for every incoming request, and
+every outgoing response. Keeping this information in the foundation layer is a
+debatable decision.
+
+For incoming requests, we are keeping track of three things in the context:
+
+- `TraceID`. A unique string that allows us to differentiate requests. We use
+UUID for this.
+
+- `Now`. We track the time and duration.
+
+- `Status Code`. By keeping the status code in the context, we can use it in our
+foundation layer `Respond()` function.
 
 ## zarf 
 
@@ -108,6 +181,50 @@ We are using [package zap](https://github.com/uber-go/zap) for logging. We pass
 around a single logger that is intialized in the `main()` function of the
 server. This single logger is then passed around through the app using various
 `cfg` structs.
+
+## Error handling
+
+### Categories of Errors
+
+#### Untrusted Errors
+
+This is the default. We do not want to expose information about the state of our
+application beyond the boundaries of our API. This is a security risk. By
+default, unless we can justify a reason otherwise, errors should be returned to
+the client as `500 Internal Server Error`.
+
+#### Trusted Errors 
+
+We trust the messaging of the error to be secure and not leak any sensitive
+information, such that we can respond to the client with the messaging.
+
+We place this error type in the business layer, and we version it as well. This
+is because our policies may change in future versions of our API in regards to
+how we want to handle trusted errors.
+
+#### Shutdown Error
+
+If our service is having data integrity issues it should be shut down. When our
+service is corrupting databases, file systems, etc., then we want to gracefully
+shutdown. But we do not want any code outside *actually* shutting down our app,
+and so instead these errors serve as a _suggestion_., our application can then
+determine the appropriate action after inspecting the error.
+
+We place this error type in the foundation layer. A Shutdown Error is a special
+case of an Untrusted Error. Like all other errors, it gets handled by the
+`errors` middleware, because it is untrusted it is logged, an an `Internal
+Server Error` gets returned to the client. The middleware then checks if the
+error is indeed a Shutdown Error, and if so, returns the error. This sends the
+control flow back to the `(*App).Handle` function in the foundation layer.
+
+At this point, we run a function `validateShutdown`. The reason we need this is
+because it's possible that we may have network problems causing our code to
+reach this line, but that are not errors worthy of shutting the app down.
+
+When we do validate the shutdown error, we then use the `shutdown` channel in
+the `App` struct to signal to the application that we need to gracefully
+shutdown. Graceful shutdown will begin.
+
 
 ## Configuration 
 
