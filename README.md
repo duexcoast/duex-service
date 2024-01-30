@@ -82,13 +82,20 @@ gracefully shutdown after having logged the error and responded to the request.
 #### Panics Middleware 
 
 This middleware calls `recover()` (within a deffered function, otherwise the
-call will do nothing). If there is a `panic!` then we want to log it.
+call will do nothing). If there is a `panic!` then we want to log it, we also
+use of the setter functions in `package metrics` to safely update the panic
+metrics value held in the context of the request.  
 
 We want to return an error here, so we need to utilize *named return values*,
 allowing us to update the value of the `err` variable from within the defer.
 This error is then handled by the errors middleware, which will respond with a
 `500 Internal Server Error`.
 
+#### Metrics Middleware
+
+This middleware sets the metrics data on the context of the request. After the
+handler is called we increment requests, and increment goroutine metrics (which
+uses a modulo operation to only do the work every 100 requests).
 
 ## Foundation
 
@@ -203,6 +210,50 @@ server. This single logger is then passed around through the app using various
 `cfg` structs.
 
 ## Error handling
+
+## Metrics
+
+Our `metrics.go` file uses a singleton, `var m *metrics` is a package level
+variable. In this instance, the API of the `expvar` package has forced our hand,
+because it is using a singleton internally. We can get away with a package level
+variable when we tick the following boxes:
+
+- *The order of initialization does not matter*. We must not have an
+order-dependency on our package level variables, our only need is that they are
+intialized before `main()`.
+
+- *They don't rely on anything from the configuration system*. If our package
+level variable requires configuration, then it must be intialized in `main()`
+(or `run()`, our nominal `main`).
+
+- *The only code touching the variable is the code in the same source code file
+as the variable*. Even if it's in the same package, we don't want code in other
+files touching the package level variable. We won't to keep it centralized
+because we want to have an easy mental model of how the variable is being
+mutated.
+
+We store our metrics data in the context of each request, updating individual
+metrics on every request. Because we are using [package
+expvar](https://pkg.go.dev/expvar), we can safely update these values
+concurrently.
+
+We make use of the `init()` function, which runs before `main()`, to initialize
+the metrics singleton. We are keeping track of the number of:
+
+- Goroutines
+- Requests
+- Errors
+- Panics
+
+Because we are storing metrics in the context, we want to use getters and
+setters, because of the lack of type safety involved in the context.
+
+The goroutine metric will slow down any given request because we have to make
+use of the runtime package which will internally inspect the runtime state,
+adding additional goroutines to do this work. We use a modulo operation on the
+request value (`if v.requests.Value()%100 == 0`), so that we only have to
+actually check how many goroutines are running on every 100th request (this
+number is likely way too small for most services, but is just a placeholder).
 
 ### Categories of Errors
 

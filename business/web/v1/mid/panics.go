@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
+	"github.com/duexcoast/duex-service/business/web/metrics"
 	"github.com/duexcoast/duex-service/foundation/web"
 )
 
@@ -22,6 +23,7 @@ func Panics() web.Middleware {
 					trace := debug.Stack()
 					err = fmt.Errorf("PANIC [%v] TRACE[%s]", rec, string(trace))
 
+					metrics.AddPanics(ctx)
 				}
 			}()
 
