@@ -32,8 +32,7 @@ so we can avoid having to use the singleton pattern for the logger.
 
 To achieve this, we utilize a closure as can be seen below:
 
-```go 
-
+```go
 func Logger(log *zap.SugaredLogger) web.Middleware { 
 
     m := func(handler web.Handler) web.Handler {
@@ -54,7 +53,6 @@ func Logger(log *zap.SugaredLogger) web.Middleware {
 
 	return m
 }
-
 ```
 
 
@@ -108,8 +106,6 @@ policies in place for these packages:
 don't want these packages to prescribe a specific logging package or
 implementation pattern.
 
-- 
-
 ### web
 
 We are using `package httptreemux` as our router, and in package web we create a
@@ -117,8 +113,14 @@ small web framework that extends the default funcitonality.
 
 The key entity is the `App` struct which is the entry point into our
 application. We override the default `Handler` function, creating a new
-signature which accepts the `context` as its first parameter. This allows us to
-write our routes in such a way that we can pass in the context object.
+signature which accepts the `context` as its first parameter.
+
+```go
+type Handler func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
+```
+
+This allows us to write our routes in such a way that we can pass in the context
+what object object.
 
 We also override the `Handle` function of the mux, allowing us to inject
 middleware before and after the call to the provided `Handler` function. We
