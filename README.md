@@ -5,17 +5,13 @@
 ## Makefile
 
 To get the project up and running:
-- `make dev-up`. This will get our kubernetes cluster up and running.
-
+- `make dev-up`. This will get our kubernetes cluster up and running. Test this 
 - `make dev-apply`. Apply changes made to the yaml defining our kubernetes
 cluster
-
 - `make dev-update-apply`. This will build our docker image, use kind to load
 the docker image into the k8s cluster, use kustomize to load our base k8s
 config, and then wait until the cluster has applied the changes. 
-
 - `make dev-update`. If all we did is change some code, this is all we need
-
 - `make dev-down`. This will shut down the project, shutting down the container,
 deleting the cluster, and the telepresence daemon.
 
