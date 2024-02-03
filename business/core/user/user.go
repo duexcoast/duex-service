@@ -27,6 +27,11 @@ type Storer interface {
 	Create(ctx context.Context, usr User) error
 	Update(ctx context.Context, usr User) error
 	Delete(ctx context.Context, usr User) error
+	Query(ctx context.Context, filter QueryFilter, orderBy order.By, pageNumber int, rowsPerPage int) ([]User, error)
+	Count(ctx context.Context, filter QueryFilter) (int, error)
+	QueryByID(ctx context.Context, userID uuid.UUID) (User, error)
+	QueryByIDs(ctx context.Context, userID []uuid.UUID) ([]User, error)
+	QueryByEmail(ctx context.Context, email mail.Address) (User, error)
 }
 
 // Core manages the set of APIs for user access.
