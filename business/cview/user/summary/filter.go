@@ -3,7 +3,7 @@ package summary
 import (
 	"fmt"
 
-	"github.com/ardanlabs/service/business/sys/validate"
+	"github.com/duexcoast/duex-service/business/sys/validate"
 	"github.com/google/uuid"
 )
 

@@ -1,6 +1,6 @@
 package summary
 
-import "github.com/ardanlabs/service/business/data/order"
+import "github.com/duexcoast/duex-service/business/data/order"
 
 // DefaultOrderBy represents the default way we sort.
 var DefaultOrderBy = order.NewBy(OrderByUserID, order.ASC)
