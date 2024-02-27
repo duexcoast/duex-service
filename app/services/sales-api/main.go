@@ -182,7 +182,7 @@ func run(log *zap.SugaredLogger) error {
 	api := http.Server{
 		Addr:         cfg.Web.APIHost,
 		Handler:      apiMux,
-		ReadTimeout:  cfg.Web.ReadTimeout,
+		ReadTimeout:  cfg.Web.ReadTimeout, // TODO: This should probably be changed to ReadHeaderTimeout
 		WriteTimeout: cfg.Web.WriteTimeout,
 		IdleTimeout:  cfg.Web.IdleTimeout,
 		ErrorLog:     zap.NewStdLog(log.Desugar()),
